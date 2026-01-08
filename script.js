@@ -1,267 +1,145 @@
-:root{
-  --txt: rgba(255,255,255,0.95);
-  --muted: rgba(255,255,255,0.68);
-  --stroke: rgba(255,255,255,0.16);
-  --shadow: rgba(0,0,0,0.35);
+// Balança de Decisão (OBS overlay)
+// Base robusta: wordcloud + clear-chat (como os teus que funcionam)
 
-  --glass: rgba(0,0,0,0.22);
+// URL params
+const params = new URLSearchParams(window.location.search);
 
-  --A: #22c55e;   /* verde */
-  --B: #3b82f6;   /* azul */
+// IMPORTANT: mantém o default localhost:3900 (como pediste)
+const domain = params.get("domain") || "http://localhost:3900";
+
+const title = params.get("title") || "Balança de Decisão";
+const leftText = params.get("left") || "Opção A";
+const rightText = params.get("right") || "Opção B";
+
+// palavras que contam (por defeito A/B)
+const keyA = (params.get("keyA") || "A");
+const keyB = (params.get("keyB") || "B");
+
+// inclinação máxima (graus)
+const maxTilt = Number(params.get("maxTilt") || 12);
+
+// UI
+const elTitle = document.getElementById("title");
+const elSub = document.getElementById("sub");
+
+const elLeftLabel = document.getElementById("leftLabel");
+const elRightLabel = document.getElementById("rightLabel");
+
+const elLeftCount = document.getElementById("leftCount");
+const elRightCount = document.getElementById("rightCount");
+
+const elLeftFill = document.getElementById("leftFill");
+const elRightFill = document.getElementById("rightFill");
+
+const elBeam = document.getElementById("beam");
+const elLeftPan = document.querySelector(".pan-left");
+const elRightPan = document.querySelector(".pan-right");
+
+elTitle.textContent = title;
+elLeftLabel.textContent = leftText;
+elRightLabel.textContent = rightText;
+
+function norm(s) {
+  return (s || "")
+    .toString()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
 }
 
-*{ box-sizing:border-box; }
-html, body { height: 100%; }
-body{
-  margin:0;
-  background:transparent;
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-  color: var(--txt);
-  overflow:hidden;
+const nKeyA = norm(keyA);
+const nKeyB = norm(keyB);
+const nLeftText = norm(leftText);
+const nRightText = norm(rightText);
+
+let last = { a: 0, b: 0 };
+
+function clamp(n, min, max) {
+  return Math.max(min, Math.min(max, n));
 }
 
-.overlay{
-  width:100%;
-  height:100%;
-  padding: 48px 64px;
-  display:flex;
-  flex-direction:column;
-  gap: 24px;
+function pulse() {
+  elBeam.classList.remove("pulse");
+  void elBeam.offsetWidth; // reflow para reiniciar
+  elBeam.classList.add("pulse");
 }
 
-.top{
-  display:flex;
-  justify-content:center;
+function updateUI(a, b) {
+  elLeftCount.textContent = a;
+  elRightCount.textContent = b;
+
+  const total = a + b;
+  const aPct = total ? (a / total) : 0.5;
+  const bPct = total ? (b / total) : 0.5;
+
+  elLeftFill.style.width = `${Math.round(aPct * 100)}%`;
+  elRightFill.style.width = `${Math.round(bPct * 100)}%`;
+
+  // inclinação baseada na diferença (suave e contínua)
+  const diff = total ? ((b - a) / total) : 0; // -1..1
+  const tilt = clamp(diff * maxTilt, -maxTilt, maxTilt);
+
+  elBeam.style.transform = `rotate(${tilt}deg)`;
+
+  // pratos descem/sobem com translateY (mais elegante que mexer no top)
+  const offset = tilt * 1.8; // ajusta "peso" visual
+  elLeftPan.style.transform = `translateY(${offset}px)`;
+  elRightPan.style.transform = `translateY(${-offset}px)`;
+
+  if (a !== last.a || b !== last.b) {
+    pulse();
+    last = { a, b };
+  }
 }
 
-.title-wrap{
-  text-align:center;
-  padding: 14px 18px;
-  border: 1px solid var(--stroke);
-  background: linear-gradient(180deg, var(--glass), rgba(0,0,0,0.06));
-  border-radius: 18px;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 16px 50px rgba(0,0,0,0.22);
+function countVotes(list) {
+  let a = 0, b = 0;
+
+  for (const raw of list) {
+    const w = norm(raw);
+    // aceita A/B e também o texto das opções
+    if (w === nKeyA || w === nLeftText) a++;
+    if (w === nKeyB || w === nRightText) b++;
+  }
+  return { a, b };
 }
 
-.title{
-  font-size: 44px;
-  font-weight: 900;
-  letter-spacing: 0.2px;
-  text-shadow: 0 10px 30px var(--shadow);
-  line-height: 1.05;
+async function clearChat() {
+  // limpa só as palavras relevantes (para evitar lixo de outras interações)
+  const words = encodeURIComponent([keyA, keyB, leftText, rightText].join(","));
+  try {
+    await fetch(`${domain}/clear-chat?words=${words}`);
+  } catch (e) {
+    // fallback
+    try { await fetch(`${domain}/clear-chat`); } catch (_) {}
+  }
 }
 
-.subtitle{
-  margin-top: 10px;
-  font-size: 16px;
-  color: var(--muted);
+async function fetchData() {
+  try {
+    const res = await fetch(`${domain}/wordcloud`, { cache: "no-store" });
+    const data = await res.json();
+
+    const raw = (data.wordcloud || "");
+    const list = raw.split(",").map(s => s.trim()).filter(Boolean);
+
+    const { a, b } = countVotes(list);
+    updateUI(a, b);
+  } catch (e) {
+    // se quiseres debug no browser:
+    // console.error("Erro a ler wordcloud:", e);
+  }
 }
 
-.center{
-  flex:1;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-}
+// Arranque
+(async function init() {
+  updateUI(0, 0);
+  await clearChat();
 
-.card{
-  width: min(1280px, 92vw);
-  height: min(520px, 70vh);
-  border-radius: 26px;
-  border: 1px solid var(--stroke);
-  background: radial-gradient(1200px 500px at 50% 0%, rgba(255,255,255,0.10), rgba(0,0,0,0.0)),
-              linear-gradient(180deg, var(--glass), rgba(0,0,0,0.08));
-  backdrop-filter: blur(14px);
-  box-shadow: 0 26px 90px rgba(0,0,0,0.35);
-  position:relative;
-  overflow:hidden;
-  padding: 34px 34px 28px;
-}
-
-.glowline{
-  position:absolute;
-  left: 10%;
-  right: 10%;
-  top: 20px;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.30), transparent);
-  opacity: 0.7;
-}
-
-.scale{
-  height:100%;
-  display:flex;
-  flex-direction:column;
-  justify-content:space-between;
-}
-
-.scale-top{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap: 16px;
-}
-
-.pill{
-  display:flex;
-  align-items:center;
-  gap: 10px;
-  padding: 10px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--stroke);
-  background: rgba(0,0,0,0.16);
-  backdrop-filter: blur(10px);
-  max-width: 48%;
-}
-
-.pill-text{
-  font-weight: 800;
-  font-size: 18px;
-  overflow:hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.dot{
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  box-shadow: 0 0 20px rgba(255,255,255,0.15);
-}
-
-.dot-left{ background: var(--A); }
-.dot-right{ background: var(--B); }
-
-.beam-wrap{
-  position:relative;
-  width:100%;
-  height: 290px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-.hanger{
-  position:absolute;
-  top: 24px;
-  left:50%;
-  transform: translateX(-50%);
-  width: 2px;
-  height: 80px;
-  background: rgba(255,255,255,0.22);
-}
-
-.pivot{
-  position:absolute;
-  top: 74px;
-  left:50%;
-  transform: translateX(-50%);
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.92);
-  box-shadow: 0 18px 50px rgba(0,0,0,0.35);
-}
-
-.beam{
-  position:absolute;
-  top: 92px;
-  left: 7%;
-  right: 7%;
-  height: 10px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.20);
-  border: 1px solid rgba(255,255,255,0.18);
-  box-shadow: 0 16px 46px rgba(0,0,0,0.25);
-  transform-origin: 50% 50%;
-  transition: transform 750ms cubic-bezier(.2,.9,.2,1);
-}
-
-.endcap{
-  position:absolute;
-  top: -5px;
-  width: 18px;
-  height: 18px;
-  border-radius: 6px;
-  background: rgba(255,255,255,0.28);
-  border: 1px solid rgba(255,255,255,0.18);
-}
-.endcap.left{ left: -6px; }
-.endcap.right{ right: -6px; }
-
-.pans{
-  position:absolute;
-  top: 130px;
-  left:0;
-  right:0;
-  display:flex;
-  justify-content:space-between;
-  padding: 0 8%;
-  pointer-events:none;
-}
-
-.pan{
-  width: 320px;
-  padding: 18px 18px 16px;
-  border-radius: 18px;
-  border: 1px solid var(--stroke);
-  background: rgba(0,0,0,0.14);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 20px 70px rgba(0,0,0,0.25);
-  transition: transform 750ms cubic-bezier(.2,.9,.2,1);
-}
-
-.count{
-  font-size: 56px;
-  font-weight: 950;
-  letter-spacing: -1px;
-  text-shadow: 0 18px 45px rgba(0,0,0,0.35);
-  line-height: 1;
-}
-
-.meter{
-  margin-top: 14px;
-  height: 10px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.10);
-  overflow:hidden;
-}
-
-.fill{
-  height:100%;
-  width: 0%;
-  border-radius: 999px;
-  transition: width 650ms cubic-bezier(.2,.9,.2,1);
-}
-
-.fill-left{
-  background: linear-gradient(90deg, rgba(34,197,94,0.25), var(--A));
-}
-.fill-right{
-  background: linear-gradient(90deg, rgba(59,130,246,0.25), var(--B));
-}
-
-.footer-hint{
-  display:flex;
-  justify-content:center;
-  padding-bottom: 4px;
-}
-
-.hint{
-  font-size: 14px;
-  color: rgba(255,255,255,0.60);
-  padding: 10px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(0,0,0,0.10);
-}
-
-.pulse{
-  animation: pulse 220ms ease-out;
-}
-@keyframes pulse{
-  0%{ filter: brightness(1); }
-  50%{ filter: brightness(1.12); }
-  100%{ filter: brightness(1); }
-}
+  // pequeno delay para garantir reset antes de contar
+  setTimeout(() => {
+    fetchData();
+    setInterval(fetchData, 1000);
+  }, 600);
+})();
