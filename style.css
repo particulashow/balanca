@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Balança de Decisão</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div id="wrap">
+    <div id="header">
+      <div id="title">Balança de Decisão</div>
+      <div id="sub">Escreve A ou B no chat</div>
+    </div>
+
+    <div id="stage">
+      <div id="beam">
+        <div class="pan left" aria-label="Prato esquerdo">
+          <div class="label" id="leftLabel">Opção A</div>
+          <div class="count"><span id="leftCount">0</span></div>
+          <div class="bar"><div class="fill" id="leftFill"></div></div>
+        </div>
+
+        <div id="pivot">
+          <div id="pivotDot"></div>
+        </div>
+
+        <div class="pan right" aria-label="Prato direito">
+          <div class="label" id="rightLabel">Opção B</div>
+          <div class="count"><span id="rightCount">0</span></div>
+          <div class="bar"><div class="fill" id="rightFill"></div></div>
+        </div>
+      </div>
+
+      <div id="base"></div>
+    </div>
+
+    <div id="footer">
+      <div id="hint">Dica: também aceita escrever o nome da opção.</div>
+    </div>
+  </div>
+
+  <script src="./script.js"></script>
+</body>
+</html>
