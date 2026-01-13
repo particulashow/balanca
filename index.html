@@ -2,13 +2,15 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Balança de Decisão</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
+
   <div class="overlay">
 
+    <!-- TÍTULO -->
     <header class="top">
       <div class="title-wrap">
         <div id="title" class="title">Balança de Decisão</div>
@@ -16,53 +18,53 @@
       </div>
     </header>
 
+    <!-- ESPAÇO ENTRE TÍTULO E ANIMAÇÃO -->
     <div class="spacer"></div>
 
+    <!-- ANIMAÇÃO -->
     <main class="bottom">
       <div class="card">
-        <div class="glowline"></div>
 
-        <div class="scale">
-          <div class="scale-top">
-            <div class="pill">
-              <span class="dot dot-left"></span>
-              <span id="leftLabel" class="pill-text">Opção A</span>
+        <div class="scale-top">
+          <div class="pill">
+            <span class="dot dot-left"></span>
+            <span id="leftLabel" class="pill-text">Opção A</span>
+          </div>
+
+          <div class="pill">
+            <span class="dot dot-right"></span>
+            <span id="rightLabel" class="pill-text">Opção B</span>
+          </div>
+        </div>
+
+        <div class="beam-wrap">
+
+          <div class="hanger"></div>
+          <div class="pivot"></div>
+
+          <div id="beam" class="beam">
+            <div class="endcap left"></div>
+            <div class="endcap right"></div>
+
+            <div id="emojiLeft" class="beam-emoji beam-emoji-left">😴</div>
+            <div id="emojiRight" class="beam-emoji beam-emoji-right">😴</div>
+          </div>
+
+          <div class="pans">
+            <div class="pan pan-left">
+              <div class="count" id="leftCount">0</div>
+              <div class="meter"><div id="leftFill" class="fill fill-left"></div></div>
             </div>
 
-            <div class="pill">
-              <span class="dot dot-right"></span>
-              <span id="rightLabel" class="pill-text">Opção B</span>
+            <div class="pan pan-right">
+              <div class="count" id="rightCount">0</div>
+              <div class="meter"><div id="rightFill" class="fill fill-right"></div></div>
             </div>
           </div>
 
-          <div class="beam-wrap">
-            <div class="hanger">
-              <div class="pivot"></div>
-            </div>
+        </div>
 
-            <div id="beam" class="beam">
-              <div class="endcap left"></div>
-              <div class="endcap right"></div>
-
-              <div id="emojiLeft" class="beam-emoji beam-emoji-left">😴</div>
-              <div id="emojiRight" class="beam-emoji beam-emoji-right">😴</div>
-            </div>
-
-            <div class="pans">
-              <div class="pan pan-left">
-                <div class="count"><span id="leftCount">0</span></div>
-                <div class="meter"><div id="leftFill" class="fill fill-left"></div></div>
-              </div>
-
-              <div class="pan pan-right">
-                <div class="count"><span id="rightCount">0</span></div>
-                <div class="meter"><div id="rightFill" class="fill fill-right"></div></div>
-              </div>
-            </div>
-          </div>
-
-        </div><!-- /scale -->
-      </div><!-- /card -->
+      </div>
     </main>
 
   </div>
