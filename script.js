@@ -1,12 +1,13 @@
 const params = new URLSearchParams(window.location.search);
 
-// Wordcloud server (o teu que funciona)
+// Wordcloud server (igual aos teus exemplos que funcionam)
 const domain = params.get("domain") || "http://localhost:3900";
 
 // Textos
 const title = params.get("title") || "Balança de Decisão";
 const leftText = params.get("left") || "Opção A";
 const rightText = params.get("right") || "Opção B";
+const subtitle = params.get("sub") || "Escreve A ou B no chat";
 
 // Votos
 const keyA = params.get("keyA") || "A";
@@ -15,8 +16,14 @@ const keyB = params.get("keyB") || "B";
 // inclinação máxima
 const maxTilt = Number(params.get("maxTilt") || 12);
 
+// escala dos emojis
+const minScale = Number(params.get("emojiMinScale") || 1.0);
+const maxScale = Number(params.get("emojiMaxScale") || 2.1);
+const fullAt = Number(params.get("emojiMaxAt") || 40); // total votos para chegar ao máximo
+
 // UI
 document.getElementById("title").textContent = title;
+document.getElementById("sub").textContent = subtitle;
 document.getElementById("leftLabel").textContent = leftText;
 document.getElementById("rightLabel").textContent = rightText;
 
@@ -73,6 +80,23 @@ function setEmoji(leftEmoji, rightEmoji) {
   }
 }
 
+function updateEmojiScale(a, b) {
+  const total = a + b;
+
+  const progress = fullAt > 0 ? Math.min(total / fullAt, 1) : 0;
+  const baseScale = minScale + (maxScale - minScale) * progress;
+
+  let leftScale = baseScale;
+  let rightScale = baseScale;
+
+  // vencedor ligeiramente maior
+  if (a > b) leftScale = baseScale * 1.12;
+  if (b > a) rightScale = baseScale * 1.12;
+
+  elEmojiLeft.style.transform = `scale(${leftScale.toFixed(3)})`;
+  elEmojiRight.style.transform = `scale(${rightScale.toFixed(3)})`;
+}
+
 function updateUI(a, b) {
   elLeftCount.textContent = a;
   elRightCount.textContent = b;
@@ -103,6 +127,9 @@ function updateUI(a, b) {
   } else {
     setEmoji("🥶", "🔥");
   }
+
+  // ✅ Emojis crescem com a contagem
+  updateEmojiScale(a, b);
 
   if (a !== last.a || b !== last.b) {
     pulse();
@@ -141,7 +168,7 @@ async function fetchData() {
     const { a, b } = countVotes(list);
     updateUI(a, b);
   } catch {
-    // overlay não deve falhar por erros temporários
+    // overlay não deve morrer por falhas temporárias
   }
 }
 
