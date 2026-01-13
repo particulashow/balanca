@@ -4,8 +4,8 @@
   --stroke: rgba(255,255,255,0.16);
   --glass: rgba(0,0,0,0.22);
 
-  --A: #9ca3af;   /* cinza neutro */
-  --B: #3b82f6;   /* azul */
+--A: #f59e0b;   /* laranja */
+--B: #3b82f6;   /* azul */
 }
 
 *{ box-sizing:border-box; }
