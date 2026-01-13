@@ -1,183 +1,64 @@
 const params = new URLSearchParams(window.location.search);
+const domain = "http://localhost:3900";
 
-// Wordcloud server (igual aos teus exemplos que funcionam)
-const domain = params.get("domain") || "http://localhost:3900";
+const leftKey = "a";
+const rightKey = "b";
 
-// Textos
 const title = params.get("title") || "Balança de Decisão";
 const leftText = params.get("left") || "Opção A";
 const rightText = params.get("right") || "Opção B";
-const subtitle = params.get("sub") || "Escreve A ou B no chat";
 
-// Votos
-const keyA = params.get("keyA") || "A";
-const keyB = params.get("keyB") || "B";
-
-// inclinação máxima
-const maxTilt = Number(params.get("maxTilt") || 12);
-
-// escala dos emojis
-const minScale = Number(params.get("emojiMinScale") || 1.0);
-const maxScale = Number(params.get("emojiMaxScale") || 2.1);
-const fullAt = Number(params.get("emojiMaxAt") || 40); // total votos para chegar ao máximo
-
-// UI
 document.getElementById("title").textContent = title;
-document.getElementById("sub").textContent = subtitle;
 document.getElementById("leftLabel").textContent = leftText;
 document.getElementById("rightLabel").textContent = rightText;
 
-const elLeftCount = document.getElementById("leftCount");
-const elRightCount = document.getElementById("rightCount");
+const elLeft = document.getElementById("leftCount");
+const elRight = document.getElementById("rightCount");
 const elLeftFill = document.getElementById("leftFill");
 const elRightFill = document.getElementById("rightFill");
 const elBeam = document.getElementById("beam");
-const elLeftPan = document.querySelector(".pan-left");
-const elRightPan = document.querySelector(".pan-right");
-const elEmojiLeft = document.getElementById("emojiLeft");
-const elEmojiRight = document.getElementById("emojiRight");
+const emojiLeft = document.getElementById("emojiLeft");
+const emojiRight = document.getElementById("emojiRight");
 
-function norm(s) {
-  return (s || "")
-    .toString()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim();
+function normalize(t){
+  return t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
 }
 
-const nKeyA = norm(keyA);
-const nKeyB = norm(keyB);
-const nLeftText = norm(leftText);
-const nRightText = norm(rightText);
+async function fetchData(){
+  const res = await fetch(`${domain}/wordcloud`, { cache:"no-store" });
+  const data = await res.json();
 
-function clamp(n, min, max) {
-  return Math.max(min, Math.min(max, n));
-}
-
-let last = { a: 0, b: 0 };
-
-function pulse() {
-  elBeam.classList.remove("pulse");
-  void elBeam.offsetWidth;
-  elBeam.classList.add("pulse");
-}
-
-function popEmoji(el) {
-  el.classList.remove("emoji-pop");
-  void el.offsetWidth;
-  el.classList.add("emoji-pop");
-}
-
-function setEmoji(leftEmoji, rightEmoji) {
-  if (elEmojiLeft.textContent !== leftEmoji) {
-    elEmojiLeft.textContent = leftEmoji;
-    popEmoji(elEmojiLeft);
-  }
-  if (elEmojiRight.textContent !== rightEmoji) {
-    elEmojiRight.textContent = rightEmoji;
-    popEmoji(elEmojiRight);
-  }
-}
-
-function updateEmojiScale(a, b) {
-  const total = a + b;
-
-  const progress = fullAt > 0 ? Math.min(total / fullAt, 1) : 0;
-  const baseScale = minScale + (maxScale - minScale) * progress;
-
-  let leftScale = baseScale;
-  let rightScale = baseScale;
-
-  // vencedor ligeiramente maior
-  if (a > b) leftScale = baseScale * 1.12;
-  if (b > a) rightScale = baseScale * 1.12;
-
-  elEmojiLeft.style.transform = `scale(${leftScale.toFixed(3)})`;
-  elEmojiRight.style.transform = `scale(${rightScale.toFixed(3)})`;
-}
-
-function updateUI(a, b) {
-  elLeftCount.textContent = a;
-  elRightCount.textContent = b;
-
-  const total = a + b;
-  const aPct = total ? (a / total) : 0.5;
-  const bPct = total ? (b / total) : 0.5;
-
-  elLeftFill.style.width = `${Math.round(aPct * 100)}%`;
-  elRightFill.style.width = `${Math.round(bPct * 100)}%`;
-
-  const diff = total ? ((b - a) / total) : 0; // -1..1
-  const tilt = clamp(diff * maxTilt, -maxTilt, maxTilt);
-
-  elBeam.style.transform = `rotate(${tilt}deg)`;
-
-  const offset = tilt * 1.8;
-  elLeftPan.style.transform = `translateY(${offset}px)`;
-  elRightPan.style.transform = `translateY(${-offset}px)`;
-
-  // Emojis conforme resultados
-  if (a === 0 && b === 0) {
-    setEmoji("😴", "😴");
-  } else if (a === b) {
-    setEmoji("🤝", "🤝");
-  } else if (a > b) {
-    setEmoji("🔥", "🥶");
-  } else {
-    setEmoji("🥶", "🔥");
-  }
-
-  // ✅ Emojis crescem com a contagem
-  updateEmojiScale(a, b);
-
-  if (a !== last.a || b !== last.b) {
-    pulse();
-    last = { a, b };
-  }
-}
-
-function countVotes(list) {
+  const words = (data.wordcloud || "").split(",");
   let a = 0, b = 0;
 
-  for (const raw of list) {
-    const w = norm(raw);
-    if (w === nKeyA || w === nLeftText) a++;
-    if (w === nKeyB || w === nRightText) b++;
-  }
-  return { a, b };
+  words.forEach(w=>{
+    const v = normalize(w);
+    if(v === leftKey) a++;
+    if(v === rightKey) b++;
+  });
+
+  updateUI(a,b);
 }
 
-async function clearChat() {
-  const words = encodeURIComponent([keyA, keyB, leftText, rightText].join(","));
-  try {
-    await fetch(`${domain}/clear-chat?words=${words}`);
-  } catch {
-    try { await fetch(`${domain}/clear-chat`); } catch {}
-  }
+function updateUI(a,b){
+  elLeft.textContent = a;
+  elRight.textContent = b;
+
+  const total = a+b || 1;
+  elLeftFill.style.width = `${(a/total)*100}%`;
+  elRightFill.style.width = `${(b/total)*100}%`;
+
+  const tilt = ((b-a)/total)*12;
+  elBeam.style.transform = `rotate(${tilt}deg)`;
+
+  const scale = Math.min(1 + total/25, 2.2);
+  emojiLeft.style.transform = `scale(${scale})`;
+  emojiRight.style.transform = `scale(${scale})`;
+
+  if(a>b){ emojiLeft.textContent="🔥"; emojiRight.textContent="🥶"; }
+  else if(b>a){ emojiLeft.textContent="🥶"; emojiRight.textContent="🔥"; }
+  else{ emojiLeft.textContent="🤝"; emojiRight.textContent="🤝"; }
 }
 
-async function fetchData() {
-  try {
-    const res = await fetch(`${domain}/wordcloud`, { cache: "no-store" });
-    const data = await res.json();
-
-    const raw = data.wordcloud || "";
-    const list = raw.split(",").map(s => s.trim()).filter(Boolean);
-
-    const { a, b } = countVotes(list);
-    updateUI(a, b);
-  } catch {
-    // overlay não deve morrer por falhas temporárias
-  }
-}
-
-(async function init() {
-  updateUI(0, 0);
-  await clearChat();
-
-  setTimeout(() => {
-    fetchData();
-    setInterval(fetchData, 1000);
-  }, 600);
-})();
+fetch(`${domain}/clear-chat`);
+setInterval(fetchData, 1000);
