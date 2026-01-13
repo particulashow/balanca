@@ -3,7 +3,6 @@
   --muted: rgba(255,255,255,0.68);
   --stroke: rgba(255,255,255,0.16);
   --shadow: rgba(0,0,0,0.35);
-
   --glass: rgba(0,0,0,0.22);
 
   --A: #22c55e;
@@ -28,7 +27,7 @@ body{
   flex-direction:column;
 }
 
-/* TOP: título */
+/* Título no topo (mais baixo/compacto) */
 .top{
   display:flex;
   justify-content:center;
@@ -37,17 +36,17 @@ body{
 
 .title-wrap{
   text-align:center;
-  padding: 10px 16px;          /* ✅ menos alto */
+  padding: 10px 16px;
   border: 1px solid var(--stroke);
   background: linear-gradient(180deg, var(--glass), rgba(0,0,0,0.06));
-  border-radius: 16px;          /* ligeiramente mais compacto */
+  border-radius: 16px;
   backdrop-filter: blur(10px);
   box-shadow: 0 16px 50px rgba(0,0,0,0.22);
   max-width: min(1100px, 92vw);
 }
 
 .title{
-  font-size: 48px;              /* ainda forte mas mais compacto */
+  font-size: 48px;
   font-weight: 950;
   letter-spacing: 0.3px;
   text-shadow: 0 10px 30px var(--shadow);
@@ -60,23 +59,23 @@ body{
   color: var(--muted);
 }
 
-/* espaço entre título e balança */
+/* Espaço entre título e animação */
 .spacer{
   flex: 1;
-  min-height: 70px; /* ✅ garante espaço mesmo em resoluções baixas */
+  min-height: 90px;
 }
 
-/* BOTTOM: animação em baixo */
+/* Balança em baixo */
 .bottom{
   display:flex;
   justify-content:center;
   align-items:flex-end;
 }
 
-/* Card da balança (mais baixo e ancorado em baixo) */
+/* Card da balança */
 .card{
   width: min(1280px, 92vw);
-  height: min(460px, 48vh);     /* ✅ mais baixo */
+  height: min(460px, 48vh);
   border-radius: 26px;
   border: 1px solid var(--stroke);
   background: radial-gradient(1200px 500px at 50% 0%, rgba(255,255,255,0.10), rgba(0,0,0,0.0)),
@@ -113,7 +112,7 @@ body{
   gap: 16px;
 }
 
-/* Pills das opções */
+/* Pills */
 .pill{
   display:flex;
   align-items:center;
@@ -147,7 +146,7 @@ body{
 .beam-wrap{
   position:relative;
   width:100%;
-  height: 300px;    /* ✅ ajustado ao card mais baixo */
+  height: 300px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -201,9 +200,10 @@ body{
 .endcap.left{ left: -6px; }
 .endcap.right{ right: -6px; }
 
+/* ✅ MAIS ESPAÇO entre balança e resultados */
 .pans{
   position:absolute;
-  top: 132px;
+  top: 175px; /* mais baixo = mais espaço entre beam e cards */
   left:0;
   right:0;
   display:flex;
@@ -248,10 +248,37 @@ body{
 .fill-left{ background: linear-gradient(90deg, rgba(34,197,94,0.25), var(--A)); }
 .fill-right{ background: linear-gradient(90deg, rgba(59,130,246,0.25), var(--B)); }
 
-/* micro pulse */
+/* Emojis nas pontas */
+.beam-emoji{
+  position:absolute;
+  top: -42px;
+  font-size: 34px;
+  filter: drop-shadow(0 14px 22px rgba(0,0,0,0.35));
+  opacity: 0.95;
+  user-select:none;
+  pointer-events:none;
+}
+
+.beam-emoji-left{
+  left: -8px;
+}
+
+.beam-emoji-right{
+  right: -8px;
+}
+
+/* micro pulse beam */
 .pulse{ animation: pulse 220ms ease-out; }
 @keyframes pulse{
   0%{ filter: brightness(1); }
   50%{ filter: brightness(1.12); }
   100%{ filter: brightness(1); }
+}
+
+/* pop emoji quando muda */
+.emoji-pop{ animation: emojiPop 260ms ease-out; }
+@keyframes emojiPop{
+  0% { transform: translateY(0) scale(1); }
+  55% { transform: translateY(-6px) scale(1.12); }
+  100% { transform: translateY(0) scale(1); }
 }
