@@ -19,19 +19,25 @@ function pickParam(...keys){
   return "";
 }
 
+function safeHex(v){
+  const s = String(v || "").trim();
+  return /^#[0-9a-fA-F]{6}$/.test(s) ? s : "";
+}
+
 function safeDomain(raw){
   const s = String(raw || "").trim();
   if (!s) return "";
-  // aceita http/https e remove trailing slash
   if (!/^https?:\/\//i.test(s)) return "";
   return s.replace(/\/$/, "");
 }
 
+function setCssVar(name, value){
+  if (!value) return;
+  document.documentElement.style.setProperty(name, value);
+}
+
 // --------------------
 // Domain (wordcloud server)
-// - prioriza ?domain=
-// - fallback: mesma origem (para quando o overlay e o servidor são o mesmo host)
-// - fallback final: localhost (dev)
 // --------------------
 const domain =
   safeDomain(pickParam("domain")) ||
@@ -39,26 +45,40 @@ const domain =
   "http://localhost:3900";
 
 // --------------------
-// Texto/labels
-// - compatível com a tua página de testes:
-//   question/optionA/optionB
-// - compatível com variações antigas:
-//   title/left/right e a/b
+// Texto/labels (compatível com a página de testes)
 // --------------------
 const title = pickParam("title", "question") || "Balança de Decisão";
-const leftText = pickParam("optionA", "left", "a") || "Opção A";
+const leftText  = pickParam("optionA", "left", "a") || "Opção A";
 const rightText = pickParam("optionB", "right", "b") || "Opção B";
 
 // --------------------
 // Keys de voto
-// - por defeito: a / b
-// - permite customizar: ?keyA=A&keyB=B ou ?leftKey=a&rightKey=b
-// (mantém compatibilidade com outros overlays)
 // --------------------
 const leftKeyRaw  = pickParam("leftKey", "keyA") || "a";
 const rightKeyRaw = pickParam("rightKey", "keyB") || "b";
 const leftKey = normalize(leftKeyRaw);
 const rightKey = normalize(rightKeyRaw);
+
+// --------------------
+// Cores por querystring
+// - aColor / bColor / text
+// - fallback: accent (se quiseres usar 1 cor só)
+// --------------------
+const aColor = safeHex(pickParam("aColor")) || safeHex(pickParam("accent")) || "";
+const bColor = safeHex(pickParam("bColor")) || "";
+const textColor = safeHex(pickParam("text")) || "";
+
+setCssVar("--A", aColor);
+setCssVar("--B", bColor);
+setCssVar("--txt", textColor);
+
+// --------------------
+// Alinhamento
+// - align=bottom|center|top
+// --------------------
+const align = normalize(pickParam("align")) || "bottom";
+document.body.classList.remove("align-bottom","align-center","align-top");
+document.body.classList.add(`align-${["top","center","bottom"].includes(align) ? align : "bottom"}`);
 
 // --------------------
 // DOM
@@ -89,7 +109,6 @@ async function fetchData(){
       .filter(Boolean);
 
     let a = 0, b = 0;
-
     for (const v of words){
       if (v === leftKey) a++;
       if (v === rightKey) b++;
@@ -97,8 +116,6 @@ async function fetchData(){
 
     updateUI(a,b);
   } catch (e){
-    // Se o servidor estiver off, não rebenta a overlay
-    // (mantém o último estado)
     console.warn("Falha a ler wordcloud:", e);
   }
 }
@@ -125,14 +142,12 @@ function updateUI(a,b){
 
 // --------------------
 // Boot
-// - se houver ?reset=1, limpa
-// - caso contrário, não limpa automaticamente (evita “apagar” a live quando abres a overlay)
+// - reset opcional: ?reset=1
 // --------------------
 const shouldReset = pickParam("reset") === "1";
 if (shouldReset){
   fetch(`${domain}/clear-chat`).catch(()=>{});
 }
 
-// primeira leitura imediata + polling
 fetchData();
 setInterval(fetchData, 1000);
