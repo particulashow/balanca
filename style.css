@@ -4,8 +4,8 @@
   --stroke: rgba(255,255,255,0.16);
   --glass: rgba(0,0,0,0.22);
 
---A: #f59e0b;   /* laranja */
---B: #3b82f6;   /* azul */
+  --A: #f59e0b;   /* laranja */
+  --B: #3b82f6;   /* azul */
 }
 
 *{ box-sizing:border-box; }
@@ -17,6 +17,11 @@ body{
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
   color:var(--txt);
 }
+
+/* Alinhamento global (controlado por ?align=bottom|center|top) */
+body.align-bottom .overlay{ justify-content:flex-end; }
+body.align-center .overlay{ justify-content:center; }
+body.align-top .overlay{ justify-content:flex-start; }
 
 .overlay{
   height:100%;
@@ -73,6 +78,7 @@ body{
 .scale-top{
   display:flex;
   justify-content:space-between;
+  gap: 12px;
 }
 
 .pill{
@@ -83,11 +89,16 @@ body{
   border-radius:999px;
   background:rgba(0,0,0,0.15);
   border:1px solid var(--stroke);
+  min-width: 0;
 }
 
 .pill-text{
   font-weight:800;
   font-size:18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 520px;
 }
 
 .dot{
@@ -165,6 +176,7 @@ body{
   display:flex;
   justify-content:space-between;
   padding:0 8%;
+  gap: 16px;
 }
 
 .pan{
@@ -195,3 +207,11 @@ body{
 }
 .fill-left{ background:var(--A); }
 .fill-right{ background:var(--B); }
+
+/* Pequena proteção para ecrãs mais pequenos */
+@media (max-width: 900px){
+  .overlay{ padding: 20px 26px; }
+  .title{ font-size: 36px; }
+  .card{ height: 420px; }
+  .pill-text{ max-width: 360px; }
+}
